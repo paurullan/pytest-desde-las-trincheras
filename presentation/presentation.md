@@ -43,12 +43,9 @@ puedes venir a disfrutar de los infitos días de sol de Mallorca
 ![sunny](memes/its_always_sunny_in_mallorca.jpg)
 
 
-Py.test como gestor de tests unitarios
+Py.test como herramienta de QA o sysadmin
 
-
-
-Paso más allá, utilidades de QA y sysadmin
-
+y no como gestor de tests unitarios.
 
 
 # Caso 0: `filechecker`
@@ -126,7 +123,33 @@ py.test --last-failed
 ```
 
 
+```python
+def test_filenames_extensions(checkfile):
+    extension = path.splitext(checkfile)[1].strip(".")
+      assert extension in allowed_extensions, \
+             "Extension %s not allowed" % (extension, )
+  ```
+
+
 Podemos añadir un parámetro al `py.test` para indicar de qué directorio coger los ficheros.
+
+```python
+def pytest_addoption(parser):
+    parser.addoption(
+        "--chekfiles",
+        default="./test-examples",
+        help="set the dir to read the code"
+    )
+  ```
+
+
+Además, verificar que no contiene saltos de línia Mac también será un plis.
+
+```python
+def test_macos_eol(checkfile):
+    with open(checkfile) as f:
+        assert "\r" not in f.read()
+```  
 
 
 Incorporamos en la misma batería de tests ejemplos y gestionamos los casos que SABEMOS que tienen que fallar con `xfail`.
@@ -148,6 +171,16 @@ def f(x):
 ```
 
 
+```python
+def test_macos_eol(checkfile):
+    # fixture checking
+    if path.basename(checkfile) in MACOS_EOL_FAIL_LIST:
+        pytest.xfail("Expected to fail: \r in file")
+
+    with open(checkfile) as f:
+        assert "\r" not in f.read()
+```
+
 
 Podemos mirar que estén en `utf-8`.
 
@@ -155,7 +188,9 @@ Aquí empieza a brillar el hecho que usemos Python para probar cosas: nada de us
 
 
 Mejor usar magia.
-
+```
+pip install filemagic
+```
 ```python
 with magic.Magic(flags=magic.MAGIC_MIME_ENCODING) as m:
     try:
@@ -166,12 +201,22 @@ assert encoding == "utf-8"
 ```
 
 
-Además, verificar que no contiene saltos de línia Mac también será un plis.
+Podemos integrar la recolección de ficheros con un parametrizador:
 
 ```python
-with open(checkfile) as f:
-    assert "\r" not in f.read()
-```
+def pytest_generate_tests(metafunc):
+    checkfiles = metafunc.config.option.checkfiles
+    matches = []
+    for root, dirnames, filenames in os.walk(checkfiles):
+        for filename in fnmatch.filter(filenames, '*'):
+            extension = os.path.splitext(filename)[1]
+            if extension.lower() in IGNORED_EXTENSIONS:
+                print("File ignore for extension: %s" % filename)
+                continue
+            print(filename)
+            matches.append(os.path.join(root, filename))
+    metafunc.parametrize("checkfile", matches)
+  ```
 
 
 Ahora queremos poner un lazo bonito sobre nuestros tests. Si no nos gusta el pintado por defecto `pip install pytest-colordots`
@@ -249,37 +294,74 @@ test_files.pyFLAKE8-check ⨯
 ```
 
 
+De esta manera eliminamos git.hooks y preprocesadores para convertir nuestras
+reglas de estilo de código en tests.
+
+
 # Caso 2: generador configuraciones kubernetes
 
 
-Verificador de yaml para un deploy kubernetes
+Verificador de yaml para un deploy kubernetes.
+
+En el propio código que gestiona los templates comprobaremos que los ficheros
+generados son correctos.
 
 
+Los fixtures pytest son mucho más flexibles y potentes que los típicos de xUnit.
 
-http://pytest.org/latest/fixture.html#fixture
-
-Los fixtures pytest son mucho más flexibles y potentes que los típicos de xUnit. Tienen nombres explícitos y basta usarlos como parámetros en las funciones para utilizarlos.
+Tienen nombres explícitos y basta usarlos como parámetros en las funciones para utilizarlos.
 
 Así, los fixtures se comportan como un un _inyector de dependencias_ y son los propios tests que consumen el resultado.
-
-Los fixtures pueden incluír finalizadores (código _teardown_) no solamente para ampliar la depuración sinó para mejorar el uso de recursos (p.ej: cerrar conexiones de bbdd).
-
-```
-request.addfinalizer(fin)
-```
-
-Vamos a renderizar el template en un fichero temporal por que queremos verificarlo a nivel de yaml. Para ello, usaremos el fixture `tmpfile`
+Note: http://pytest.org/latest/fixture.html#fixture
 
 
-Además, como los fixtures son funciones normales y corrientes, pueden llamar a otros fixtures.
+Vamos a renderizar el template en un fichero temporal por que queremos
+verificarlo a nivel de yaml. Para ello, usaremos el fixture `tmpfile`
 
 
-
-Con los fixtures `py.test` tenemos un potentísimo sistema de inyección de dependencias.
-
+Además, como los fixtures son funciones normales y corrientes,
+pueden llamar a otros fixtures.
 
 Note: http://pytest.org/latest/tmpdir.html#tmpdir-handling
 Note: tmpdir per crear els fitxers yaml del k8s
+
+
+# Caso 4: mini scraper tester
+
+
+Selenium es una maravilla y podemos rápidamente integrarlo con `py.test`
+
+```
+pip install pytest-splinter
+```
+
+
+Explotaremos los fixtures que nos proporciona `splinter` para hacer nuestro
+fixture de login
+
+```python
+# conftest.py
+import pytest
+@pytest.fixture
+def login(browser):
+    browser.visit('http://site-demo.apsl.net/')
+    browser.fill('username', 'user')
+    browser.fill('password', 'SUPERSECRET')
+    browser.find_by_css('#submit-id-submit').click()
+```
+
+
+```python
+def test_add_item(browser, login):
+    browser.fill('slug', 'test')
+    browser.find_by_css('input#submit').click()
+    assert browser.find_by_css('tr td')[0] == 'test'
+
+    with browser.get_iframe(0) as iframe:
+        iframe.find_by_css('button').click()
+
+    assert not browser.find_by_css('tr td')
+```
 
 
 # Caso 3: `mariano20`
@@ -290,29 +372,26 @@ Mariano era un jefe que tuve al que le encantaba hacer de nagios humano.
 ![mariano](memes/mariano.jpg)
 
 
-Para hacer que su família pudiera disfrutar de él lo robotizamos e hicimos el «Mariano 2.0» o `mariano20`
+Para ayudar a que su família pudiera disfrutar de él lo robotizamos e hicimos el «Mariano 2.0» o `mariano20`
 
 ![mariano-robot](memes/mariano-robot.jpg)
 
 
-En realidad es un scraping dinámico que lee de un fichero de configuración las páginas que tienen que existir.
-
+En realidad es un scraping que lee de un fichero de configuración las páginas que tienen que existir.
 
 
 Sincronización de las secciones principales de una web.
 
+Podemos especificar en un yaml qué menús esperamos encontrar.
+Generaremos un fallo en caso que no sean exactamente esos.
 
 
-Podemos especificar en un yaml qué menús esperamos encontrar. Generaremos un fallo en caso que no sean exactamente esos.
-
-
-
-Parametrizamos el test para poder mirar a todos nuestros países.
+La web era multipaís: parametrizamos el test para poder mirar a todos
+nuestros países.
 
 
 
 Y lo ponemos en paralelo: `xdist`
-Note: https://pypi.python.org/pypi/pytest-xdist
 
 ```
 pip install pytest-xdist
@@ -323,6 +402,7 @@ e indicamos el número de procesos a crear (o auto):
 ```
 py.test -n auto
 ```
+Note: https://pypi.python.org/pypi/pytest-xdist
 
 
 ¿Qué queremos averiguar qué tests son los más lentos?
@@ -332,13 +412,27 @@ py.test --durations=5
 ```
 
 
-Algunas veces tenemos problemas de red; don't panic! Tenemos `flaky` para los tests _poco fiables_.
+Algunas veces tenemos problemas de red; don't panic!
 
+Tenemos `flaky` para los tests _poco fiables_.
+
+```
+pip install flaky
+```
+```python
+from flaky import flaky
+@flaky(max_runs=3, min_passes=2)
+def test_with_network_problems(self):
+    r = requests.get(homepage, timeout=0.5)
+    assert r.ok
+```
+
+Note: https://github.com/box/flaky
 
 
 Los tests se pueden filtrar.
 
-La manera más fácil es identificandolo:
+La manera más fácil es identificándolo:
 
 ```
 py.test modulo.clase::funcion
@@ -351,25 +445,38 @@ py.test -k "cart and logged"
 ```
 
 
-Separaremos los distintos tests en agrupaciones el `pytest.mark`. Esto nos permite filtrar por ejemplo según línia de negocio.
-Note: http://pytest.org/latest/example/markers.html
+Separaremos los distintos tests en agrupaciones el `pytest.mark`.
+
+Esto nos permite filtrar por ejemplo según línia de negocio.
 
 ```python
-@pytest.mark.premium
+@pytest.mark.users
 ```
 
 ```
 py.test --markers
-py.test -m premium
+py.test -m users
 ```
-
-
+Note: http://pytest.org/latest/example/markers.html
 
 
 Usaremos la salida XML del `jUnit` para guardar el estado.
 
+```
+py.test --junit-xml=path.xml
+```
 
-Lo metemos en un job periódico de jenkins y listos.
+```
+jenkins  JUnit Attachments Plugin
+```
+
+Es genial por que así Jenkins _entiende_ que estamos pasando tests.
+
+
+![jenkins_a](images/test-result.png)
+
+
+![jenkins_b](images/test-result-trend.png)
 
 
 
