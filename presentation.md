@@ -317,14 +317,54 @@ Note: http://pytest.org/latest/fixture.html#fixture
 
 
 Vamos a renderizar el template en un fichero temporal por que queremos
-verificarlo a nivel de yaml. Para ello, usaremos el fixture `tmpfile`
-
+verificarlo a nivel de yaml. Para ello, usaremos el fixture `tmpdir`
 
 Además, como los fixtures son funciones normales y corrientes,
 pueden llamar a otros fixtures.
 
-Note: http://pytest.org/latest/tmpdir.html#tmpdir-handling
-Note: tmpdir per crear els fitxers yaml del k8s
+```python
+@pytest.yield_fixture
+def tmpfile(tmpdir):
+    yield tmpdir + "test.yaml"
+```
+
+
+```python
+from sh import envtpl, yamllint
+import itertools
+envtpl = envtpl.bake(keep_template=True)
+```
+
+```python
+@pytest.mark.parametrize("app, component", \
+                         itertools.product(APPS, COMPONENTS))
+def test_yamls(app, component, tmpfile):
+    infile = "apps/app-{component}.yaml.tpl".format(
+        app=app, component=component
+    )
+    envtpl(infile, o=tmpfile, _env={…},  )
+    yamllint(tmpfile)
+```
+
+
+```
+$ py.test -v
+collected 30 items
+test_yamls.py::test_yamls[web-deployment] PASSED
+test_yamls.py::test_yamls[web-hpa] PASSED
+test_yamls.py::test_yamls[web-svc] PASSED
+test_yamls.py::test_yamls[web-varnish-svc] PASSED
+
+test_yamls.py::test_yamls[nginx-deployment] PASSED
+…
+```
+
+
+Y recordad que el multiproceso es nuestro amigo:
+
+```
+py.test -n auto
+```
 
 
 
@@ -366,6 +406,20 @@ def test_add_item(browser, login):
 ```
 
 
+En este caso, el `splinter` nos puede llevar problemas si ponemos el multiproceso.
+
+Lo que si podemos hacer es usar `ipdb` cuando lo necesitemos:
+
+```python
+def test_add_item(browser, login):
+    …
+    import ipdb; ipdb.set_trace()
+    …
+```
+
+```
+py.test -s      #  shortcut for --capture=no.
+```
 
 # Caso 4: `mariano20`
 
