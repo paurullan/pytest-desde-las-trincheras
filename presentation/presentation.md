@@ -10,10 +10,7 @@ CreantBits «Estiu 2016» - 15/7/2016
 Note: EuroPython 2016 - Bilbao 19/7/2016
 
 
-
-Cómo usar pytest para cosas que no nos vienen a la cabeza usar un framework de
-testing.
-
+Cómo usar pytest para cosas que no nos vienen a la cabeza usar un framework de testing.
 
 
 Recreación de batallitas con Pytest
@@ -21,13 +18,11 @@ Recreación de batallitas con Pytest
 ![pytest](logos/pytest.png)
 
 
-
 Trabajo en APSL como sysadmin
 
 (lo que en _cool_ hoy en día llaman `SRE` o
 
 _ingeniero de fiabilidad_)
-
 
 
 ![Shameless plug](memes/shameless_plug.png)
@@ -46,6 +41,7 @@ puedes venir a disfrutar de los infitos días de sol de Mallorca
 Py.test como herramienta de QA o sysadmin
 
 y no como gestor de tests unitarios.
+
 
 
 # Caso 0: `filechecker`
@@ -164,13 +160,6 @@ def f(x):
   pass
 ```
 
-```Python
-def f(x):
-  if x > 1:
-    pytest.mark.xfail(strict=True)
-```
-
-
 ```python
 def test_macos_eol(checkfile):
     # fixture checking
@@ -218,8 +207,16 @@ def pytest_generate_tests(metafunc):
     metafunc.parametrize("checkfile", matches)
   ```
 
+```
+py.test --checkfiles=dir
+```
 
-Ahora queremos poner un lazo bonito sobre nuestros tests. Si no nos gusta el pintado por defecto `pip install pytest-colordots`
+
+Para hacer bonitos nuestros tests: ¡colorines!
+
+```
+pip install pytest-colordots
+```
 
 ```
 $ py.test
@@ -238,8 +235,11 @@ test_files.py::test_filenames_extensions[./010_0000_empty.tab] PASSED
 Note: https://pypi.python.org/pypi/pytest-colordots
 
 
-
 O más bonito todavía, con `sugar`
+
+```
+pip install pytest-sugar
+```
 
 ```
 $ py.test -v
@@ -257,7 +257,7 @@ Note: https://github.com/Frozenball/pytest-sugar
 
 
 
-# Caso 1: calidad mínima de código
+# Caso 1: estándares de estilo
 
 
 Un truco para forzar a nuestros programadores a seguir un estilo de código es que EL PROPIO CÓDIGO sea un test.
@@ -298,6 +298,7 @@ De esta manera eliminamos git.hooks y preprocesadores para convertir nuestras
 reglas de estilo de código en tests.
 
 
+
 # Caso 2: generador configuraciones kubernetes
 
 
@@ -326,7 +327,8 @@ Note: http://pytest.org/latest/tmpdir.html#tmpdir-handling
 Note: tmpdir per crear els fitxers yaml del k8s
 
 
-# Caso 4: mini scraper tester
+
+# Caso 3: mini scraper tester
 
 
 Selenium es una maravilla y podemos rápidamente integrarlo con `py.test`
@@ -364,7 +366,8 @@ def test_add_item(browser, login):
 ```
 
 
-# Caso 3: `mariano20`
+
+# Caso 4: `mariano20`
 
 
 Mariano era un jefe que tuve al que le encantaba hacer de nagios humano.
@@ -388,7 +391,6 @@ Generaremos un fallo en caso que no sean exactamente esos.
 
 La web era multipaís: parametrizamos el test para poder mirar a todos
 nuestros países.
-
 
 
 Y lo ponemos en paralelo: `xdist`
@@ -466,13 +468,11 @@ Usaremos la salida XML del `jUnit` para guardar el estado.
 py.test --junit-xml=path.xml
 ```
 
+
+Así Jenkins _entiende_ que estamos pasando tests.
 ```
 jenkins  JUnit Attachments Plugin
 ```
-
-Es genial por que así Jenkins _entiende_ que estamos pasando tests.
-
-
 ![jenkins_a](images/test-result.png)
 
 
@@ -484,12 +484,3 @@ Es genial por que así Jenkins _entiende_ que estamos pasando tests.
 
 
 ![no-questions](memes/no-questions.png)
-
-
-TODO:
-
-1. behaviour driven development amb bdd rollo cucumber
-pytest cucumber behaviour driven development
-https://github.com/pytest-dev/pytest-bdd
-2. quickcheck
-https://pypi.python.org/pypi/pytest-quickcheck
