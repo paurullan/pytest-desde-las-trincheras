@@ -1,0 +1,21 @@
+sites:
+  ca:
+    redirect: https://ca.wikipedia.org/wiki/Portada
+    title: Viquipèdia
+    today: mp-left
+
+  de:
+    redirect: https://de.wikipedia.org/wiki/Wikipedia:Hauptseite
+    today: Artikel_des_Tages
+    title: Wikipedia – Die freie Enzyklopädie
+
+
+  en:
+    redirect: https://en.wikipedia.org/wiki/Main_Page
+    today: mp-tfa-h2
+    title: Wikipedia, the free encyclopedia
+
+  it:
+    redirect: https://it.wikipedia.org/wiki/Pagina_principale
+    today: mf-vetrina
+    title: Wikipedia, l'enciclopedia libera
