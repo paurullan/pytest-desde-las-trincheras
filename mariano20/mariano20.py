@@ -5,29 +5,29 @@ import requests
 from collections import namedtuple
 
 
-Site = namedtuple('Site', 'homepage redirect title today')
+Site = namedtuple('Site', 'homepage redirect title today code')
 
 BASE_SITE = "https://{code}.wikipedia.org"
 
 def load_sites():
     with open("sites.yaml") as f:
         params = yaml.load(f)
-    for code, data in params['sites'].items():
+    for code, data in sorted(params['sites'].items()):
         data['homepage'] = BASE_SITE.format(code=code)
-        yield Site(**data)
+        yield Site(**data, code=code)
 
 
-@pytest.mark.parametrize("site", load_sites())
+@pytest.mark.parametrize("site", load_sites())#, ids=lambda s: s.code)
 def test_site_redirect(site):
     r = requests.head(site.homepage, allow_redirects=True)
     assert r.ok
+    assert len(r.history) == 1
     redirect, = r.history
     assert redirect.is_permanent_redirect
-    assert len(r.history) == 1
     assert r.url == site.redirect
 
 
-@pytest.mark.parametrize("site", load_sites())
+@pytest.mark.parametrize("site", load_sites(), ids=lambda s: s.code)
 def test_home_today_article(site):
     r = requests.get(site.homepage)
     assert r.ok, "Could not load site"
