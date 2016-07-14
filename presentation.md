@@ -103,16 +103,24 @@ jenkins  JUnit Attachments Plugin
 ![jenkins_b](images/test-result-trend.png)
 
 
-# Caso 1: mini scraper
+# Trivia
+
+## ¿cuántas palabras clave hay en Python?
 
 
-Crearemos un pequeño script que arranque Selenium y con `assert` confirmaremos
+Con `assert` confirmaremos
 si una variable es verdadero.
 
 ```python
 assert req.ok
 assert items > 3
 ```
+
+
+# Caso 1: mini scraper
+
+
+Crearemos un pequeño script que arranque Selenium.
 
 
 Los *fixtures pytest* son mucho más flexibles y potentes que los típicos de xUnit.
@@ -192,14 +200,6 @@ generados son correctos.
 Vamos a renderizar el template en un fichero temporal por que queremos
 verificarlo a nivel de yaml.
 
-Explotaremos cosas como la librería `sh`
-
-```python
-from sh import envtpl, yamllint
-envtpl = envtpl.bake(keep_template=True)
-```
-
-
 Usaremos el fixture `tmpdir`.
 
 ```python
@@ -208,6 +208,15 @@ def tmpfile(tmpdir):
     yield tmpdir + "test.yaml"
 ```
 
+
+Explotaremos cosas como la librería `sh`
+
+```python
+from sh import envtpl, yamllint
+```
+
+
+`parametrize` nos ahorrará un montón de código repetitivo
 
 ```python
 @pytest.mark.parametrize("app, component", \
@@ -238,12 +247,12 @@ test_yamls.py::test_yamls[nginx-deployment] PASSED
 # Caso 3: `mariano20`
 
 
-Mariano era un jefe que tuve al que le encantaba hacer de nagios humano.
+A Mariano le encantaba hacer de nagios humano.
 
 ![mariano](memes/mariano.jpg)
 
 
-Para ayudar a que su família pudiera disfrutar de él lo robotizamos e hicimos el «Mariano 2.0» o `mariano20`
+Para que su família pudiera disfrutar de él lo robotizamos e hicimos el «Mariano 2.0» o `mariano20`
 
 ![mariano-robot](memes/mariano-robot.jpg)
 
@@ -251,13 +260,6 @@ Para ayudar a que su família pudiera disfrutar de él lo robotizamos e hicimos 
 En realidad es un scraping que lee de un fichero de configuración las páginas que tienen que existir.
 
 También verifica algunas redirecciones.
-
-
-Podemos especificar en un yaml qué menús esperamos encontrar.
-Generaremos un fallo en caso que no sean exactamente esos.
-
-La web a monitorizar era multipaís: parametrizamos el test para poder mirar a todos
-nuestros países.
 
 
 ```yaml
@@ -363,11 +365,11 @@ py.test --exit-first
 ```
 
 ```bash
-py.test --failed-first
+py.test --last-failed
 ```
 
 ```bash
-py.test --last-failed
+py.test --failed-first
 ```
 
 
@@ -494,7 +496,6 @@ for code, data in sorted(params['sites'].items()):
 py.test --durations=8
 ```
 
-
 ```
 == slowest 8 test durations ==
 0.69s call     mariano20.py::test_home_today_article[it]
@@ -538,7 +539,10 @@ py.test modulo.clase::funcion
 pero también lo podemos hacer filtrando con strings:
 
 ```
-py.test -k "cart and logged"
+py.test -k "de and redirect"
+```
+```
+mariano20.pytest_site_redirect[de]
 ```
 
 
@@ -610,7 +614,7 @@ E         Use -v to get the f
 ```
 
 
-Y gestiona excepciones y warnings:
+Manipula excepciones y warnings:
 
 ```
 def test_exceptions_and_warnings():
@@ -663,15 +667,15 @@ def pytest_generate_tests(metafunc):
                 continue
             print(filename)
             matches.append(os.path.join(root, filename))
-    metafunc.parametrize("checkfile", matches)
+    metafunc.parametrize("check", matches)
 ```
 
 
 Nuestra función de comprovación de extensión recibirá el parámetro `checkfile`
 
 ```python
-def test_filenames_extensions(checkfile):
-    extension = path.splitext(checkfile)[1].strip(".")
+def test_filenames_extensions(check):
+    extension = path.splitext(check)[1].strip(".")
       assert extension in allowed_extensions, \
              "Extension %s not allowed" % (extension, )
   ```
@@ -680,8 +684,8 @@ def test_filenames_extensions(checkfile):
 Además, verificar que no contiene saltos de línia Mac también será un plis.
 
 ```python
-def test_macos_eol(checkfile):
-    with open(checkfile) as f:
+def test_macos_eol(check):
+    with open(check) as f:
         assert "\r" not in f.read()
 ```  
 
@@ -699,7 +703,7 @@ pip install filemagic
 ```python
 with magic.Magic(flags=magic.MAGIC_MIME_ENCODING) as m:
     try:
-        encoding = m.id_filename(checkfile)
+        encoding = m.id_filename(check)
     except magic.MagicError:
         assert False, "Could not decode file"
 assert encoding == "utf-8"
@@ -719,40 +723,17 @@ def f(x):
 ```
 
 ```python
-def test_macos_eol(checkfile):
+def test_macos_eol(check):
     # fixture checking
-    if path.basename(checkfile) in MACOS_EOL_FAIL_LIST:
+    if path.basename(check) in MACOS_EOL_FAIL_LIST:
         pytest.xfail("Expected to fail: \r in file")
 
-    with open(checkfile) as f:
+    with open(check) as f:
         assert "\r" not in f.read()
 ```
 
 
-Para hacer bonitos nuestros tests: ¡colorines!
-
-```
-pip install pytest-colordots
-```
-
-```
-$ py.test
-test_files.py .x...
-```
-
-```
-$ py.test -v
-test_files.py::test_utf8[./000_1234_any-extension.xXx] PASSED
-test_files.py::test_utf8[./010_0000_empty.tab] xfail
-test_files.py::test_macos_eol[./000_1234_any-extension.xXx] PASSED
-test_files.py::test_macos_eol[./010_0000_empty.tab] PASSED
-test_files.py::test_filenames_extensions[./000_1234_any-extension.xXx] PASSED
-test_files.py::test_filenames_extensions[./010_0000_empty.tab] PASSED
-```
-Note: https://pypi.python.org/pypi/pytest-colordots
-
-
-O más bonito todavía, con `sugar`
+Para hacer bonitos nuestros tests: ¡ASUUUUCAR!
 
 ```
 pip install pytest-sugar
