@@ -5,9 +5,7 @@ Pau Ruŀlan Ferragut
 
 pau@rullan.cat + prullan@apsl.net
 
-CreantBits «Estiu 2016» - 15/7/2016
-
-Note: EuroPython 2016 - Bilbao 19/7/2016
+EuroPython 2016 - Bilbao 19/7/2016
 
 
 Cómo usar pytest para cosas que no nos vienen a la cabeza al
@@ -103,9 +101,10 @@ jenkins  JUnit Attachments Plugin
 ![jenkins_b](images/test-result-trend.png)
 
 
-# Trivia
+# Caso 1: mini scraper
 
-## ¿cuántas palabras clave hay en Python?
+
+Crearemos un pequeño script que arranque Selenium.
 
 
 Con `assert` confirmaremos
@@ -117,13 +116,7 @@ assert items > 3
 ```
 
 
-# Caso 1: mini scraper
-
-
-Crearemos un pequeño script que arranque Selenium.
-
-
-Los *fixtures pytest* son mucho más flexibles y potentes que los típicos de xUnit.
+Los *fixtures* `py.test` son mucho más flexibles y potentes que los típicos de xUnit.
 
 Tienen nombres explícitos y basta usarlos como parámetros en las funciones para utilizarlos.
 
@@ -133,7 +126,7 @@ def test_file(tmpdir):
 ```
 
 
-Así, los fixtures se comportan como un un _inyector de dependencias_ y son los propios tests que consumen el resultado.
+Los fixtures se comportan como un _inyector de dependencias_ y son los propios tests que consumen el resultado.
 
 
 Selenium es una maravilla y podemos
@@ -188,63 +181,7 @@ py.test -s      #  shortcut for --capture=no.
 ```
 
 
-# Caso 2: generador configuraciones kubernetes
-
-
-Verificador de yaml para un deploy kubernetes.
-
-En el propio código que gestiona los templates comprobaremos que los ficheros
-generados son correctos.
-
-
-Vamos a renderizar el template en un fichero temporal por que queremos
-verificarlo a nivel de yaml.
-
-Usaremos el fixture `tmpdir`.
-
-```python
-@pytest.yield_fixture
-def tmpfile(tmpdir):
-    yield tmpdir + "test.yaml"
-```
-
-
-Explotaremos cosas como la librería `sh`
-
-```python
-from sh import envtpl, yamllint
-```
-
-
-`parametrize` nos ahorrará un montón de código repetitivo
-
-```python
-@pytest.mark.parametrize("app, component", \
-                         itertools.product(APPS, COMPONENTS))
-def test_yamls(app, component, tmpfile):
-    infile = "apps/app-{component}.yaml.tpl".format(
-        app=app, component=component
-    )
-    envtpl(infile, o=tmpfile, _env={…},  )
-    yamllint(tmpfile)
-```
-
-
-```
-$ py.test -v
-collected 30 items
-test_yamls.py::test_yamls[web-deployment] PASSED
-test_yamls.py::test_yamls[web-hpa] PASSED
-test_yamls.py::test_yamls[web-svc] PASSED
-test_yamls.py::test_yamls[web-varnish-svc] PASSED
-
-test_yamls.py::test_yamls[nginx-deployment] PASSED
-…
-```
-
-
-
-# Caso 3: `mariano20`
+# Caso 2: `mariano20`
 
 
 A Mariano le encantaba hacer de nagios humano.
@@ -351,14 +288,28 @@ mariano20.py:33: AssertionError
 ```
 
 
-Para estudiar los errores podemos solicitar más información de backtrace:
-
-```bash
-py.test --tb=long
+```
+…
+…
+…
+…
+…
+…
+…
+…
+…
+…
+>       assert site.title == soup.title.string
+E       assert 'Viquipèdia' == 'Wikipedia – Die freie Enzyklopädie'
+E         - Viquipèdia
+E         + Wikipedia – Die freie Enzyklopädie
+…
+…
+…
 ```
 
 
-O atacar directamente a los tests problemáticos:
+Podemos atacar directamente a los tests problemáticos:
 
 ```bash
 py.test --exit-first
@@ -384,41 +335,6 @@ run-last-failure: rerun last 2 failures
 Results (1.40s):
        2 passed
        6 deselected
- ```
-
-
-En modo `-v` `py.test` indica qué casos estamos ejecutando para cada opción
-del `parametrize`
-
-```
- $ py.test -v mariano20.py
-
-  mariano20.pytest_site_redirect[site0] ✓   12% █▍        
-  mariano20.pytest_site_redirect[site1] ✓   25% ██▌       
-  mariano20.pytest_site_redirect[site2] ✓   38% ███▊      
-  mariano20.pytest_site_redirect[site3] ✓   50% █████     
-```
-
-
-El `parametrize` tiene una opción `ids` que nos permite hacer más claro
-el listado de casos.
-
-```python
-Site = namedtuple('Site', 'homepage redirect title today code')
-```
-
-```
-@pytest.mark.parametrize("site", load_sites(), ids=lambda s: s.code)
-```
-
-
-```
-$ py.test mariano20.py  -v
-
- mariano20.pytest_site_redirect[de] ✓     12% █▍
- mariano20.pytest_site_redirect[en] ✓     25% ██▌
- mariano20.pytest_site_redirect[ca] ✓     38% ███▊
- mariano20.pytest_site_redirect[it] ✓     50% █████
  ```
 
 
@@ -465,31 +381,6 @@ sys  0m0.316s
 ```
 
 
-Cuidado con el xdist si generais dinámicamente los tests.
-
-```
-― ERROR collecting gw2 ―――――――――――――――――――――――――――――
-Different tests were collected between gw3 and gw2.
-The difference is:
---- gw3
-+++ gw2
-
-@@ -1,8 +1,8 @@
-+mariano20.py::test_site_redirect[de]
--mariano20.py::test_site_redirect[en]
--mariano20.py::test_site_redirect[de]
--mariano20.py::test_site_redirect[ca]
-```
-
-
-El orden del parametrize debe de ser determinista
-
-```python
-for code, data in sorted(params['sites'].items()):
-```
-
-
-
 ¿Qué queremos averiguar qué tests son los más lentos?
 
 ```
@@ -530,38 +421,7 @@ def test_with_network_problems(self):
 Note: https://github.com/box/flaky
 
 
-Los tests se pueden filtrar.
-
-```
-py.test modulo.clase::funcion
-```
-
-pero también lo podemos hacer filtrando con strings:
-
-```
-py.test -k "de and redirect"
-```
-```
-mariano20.pytest_site_redirect[de]
-```
-
-
-Separaremos los distintos tests en agrupaciones el `pytest.mark`.
-
-Esto nos permite filtrar por ejemplo según línia de negocio.
-
-```python
-@pytest.mark.users
-```
-
-```
-py.test --markers
-py.test -m users
-```
-Note: http://pytest.org/latest/example/markers.html
-
-
-# Caso 4: `filechecker`
+# Caso 3: `filechecker`
 
 
 Confirmar que un conjunto de ficheros sigue una nomenclatura de _código-numérico_nombre.extensión_
@@ -582,18 +442,6 @@ self.assertEquals(x, y)
 
 ```python
 assert x == y
-```
-
-
-De primeras el no tener `assertAlmostEqual` y toda la pandilla puede parecer
-un inconveniente
-
-```python
-self.assertAlmostEqual(a, b)
-```
-
-```python
-assert round(a-b, 7) == 0 	 
 ```
 
 
@@ -624,13 +472,6 @@ def test_exceptions_and_warnings():
         myobject.method_with_warnings()
     with pytest.deprecated_call():
         myobject.deprecated_method()
-```
-
-
-Mensajes de logging detallado
-
-```python
-assert x % 2 == 0, "Expected even, found odd value"
 ```
 
 
