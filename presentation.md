@@ -27,7 +27,7 @@ _ingeniero de fiabilidad_)
 ![Shameless plug](memes/shameless_plug.png)
 
 
-En APSL siempre buscamos talento así que…
+En APSL siempre buscamos talento…
 
 ![apsl](logos/apsl.svg)
 
@@ -37,9 +37,7 @@ puedes venir a disfrutar de los infitos días de sol de Mallorca
 ![sunny](memes/its_always_sunny_in_mallorca.jpg)
 
 
-Py.test como herramienta de QA o sysadmin
-
-y no como gestor de tests unitarios.
+Py.test como herramienta de QA o sysadmin y no como gestor de tests unitarios.
 
 
 # Caso 0: estándares de estilo
@@ -118,6 +116,7 @@ assert items > 3
 
 Los *fixtures* `py.test` son mucho más flexibles y potentes que los típicos de xUnit.
 
+
 Tienen nombres explícitos y basta usarlos como parámetros en las funciones para utilizarlos.
 
 ```python
@@ -141,6 +140,7 @@ pip install pytest-splinter
 Explotaremos los fixtures que nos proporciona `splinter` para accedir al navegador
 y hacer nuestro fixture de login
 
+
 ```python
 # conftest.py
 import pytest
@@ -150,7 +150,7 @@ def login(browser):
     browser.visit('http://site-demo.apsl.net/')
     browser.fill('username', 'user')
     browser.fill('password', 'SUPERSECRET')
-    browser.find_by_css('#submit-id-submit').click()
+    browser.find_by_css('#submit').click()
 ```
 
 
@@ -158,7 +158,7 @@ def login(browser):
 def test_add_item(browser, login):
     browser.fill('slug', 'test')
     browser.find_by_css('input#submit').click()
-    assert browser.find_by_css('tr td')[0] == 'test'
+    assert browser.find_by_css('tr td')[0] == 't'
 
     with browser.get_iframe(0) as iframe:
         iframe.find_by_css('button').click()
@@ -189,7 +189,9 @@ A Mariano le encantaba hacer de nagios humano.
 ![mariano](memes/mariano.jpg)
 
 
-Para que su família pudiera disfrutar de él lo robotizamos e hicimos el «Mariano 2.0» o `mariano20`
+Lo robotizamos e hicimos el
+
+«Mariano 2.0» o `mariano20`
 
 ![mariano-robot](memes/mariano-robot.jpg)
 
@@ -220,16 +222,15 @@ $ py.test -v mariano20.py
 
 ```python
 import yaml
-
 from collections import namedtuple
-Site = namedtuple('Site', 'homepage redirect title today')
-BASE_SITE = "https://{code}.wikipedia.org"
-
+Site = namedtuple('Site',
+                  'homepage redirect title today')
+BASE_SITE = "https://{}.wikipedia.org"
 def load_sites():
     with open("sites.yaml") as f:
         params = yaml.load(f)
     for code, data in params['sites'].items():
-        data['homepage'] = BASE_SITE.format(code=code)
+        data['homepage'] = BASE_SITE.format(code)
         yield Site(**data)
 ```
 
@@ -237,10 +238,10 @@ def load_sites():
 ```python
 import pytest
 import requests
-
 @pytest.mark.parametrize("site", load_sites())
 def test_site_redirect(site):
-    r = requests.head(site.homepage, allow_redirects=True)
+    r = requests.head(site.homepage,
+                      allow_redirects=True)
     assert r.ok
     assert len(r.history) == 1
     redirect, = r.history
@@ -269,42 +270,26 @@ $ py.test mariano20.py  -v
 
 ```
 ― test_home_today_article[de] ――
-site = Site(title='Viquipèdia', today='Artikel_des_Tages',
+site = Site(title='Viquipèdia',
+  today='Artikel_des_Tages',
   homepage='https://de.wikipedia.org',
   redirect='https://de.wikipedia.org/wiki/Wikipedia:Hauptseite')
-
-    @pytest.mark.parametrize("site", load_sites())
-    def test_home_today_article(site):
-        r = requests.get(site.homepage)
-        assert r.ok, "Could not load site"
-        soup = BeautifulSoup(r.content, 'html.parser')
->       assert site.title == soup.title.string
-E       assert 'Viquipèdia' == 'Wikipedia – Die freie Enzyklopädie'
-E         - Viquipèdia
-E         + Wikipedia – Die freie Enzyklopädie
-
+  …
+> assert site.title == soup.title.string
+E assert 'Viquipèdia' == 'Wikipedia – Die freie Enzyklopädie'
+E   - Viquipèdia
+E   + Wikipedia – Die freie Enzyklopädie
 mariano20.py:33: AssertionError
-  mariano20.py ⨯    25% ██▌
 ```
 
 
 ```
 …
-…
-…
-…
-…
-…
-…
-…
-…
-…
->       assert site.title == soup.title.string
-E       assert 'Viquipèdia' == 'Wikipedia – Die freie Enzyklopädie'
-E         - Viquipèdia
-E         + Wikipedia – Die freie Enzyklopädie
-…
-…
+>assert site.title == soup.title.string
+Eassert 'Viquipèdia' == \
+        'Wikipedia – Die freie Enzyklopädie'
+E  - Viquipèdia
+E  + Wikipedia – Die freie Enzyklopädie
 …
 ```
 
@@ -330,7 +315,7 @@ los tests que fallaron.
 ```
 $ py.test mariano20.py --lf
 run-last-failure: rerun last 2 failures
- mariano20.py ✓✓                              100% ██████████
+ mariano20.py ✓✓        100% ██████████
 
 Results (1.40s):
        2 passed
@@ -381,7 +366,7 @@ sys  0m0.316s
 ```
 
 
-¿Qué queremos averiguar qué tests son los más lentos?
+¿Queremos averiguar qué tests son los más lentos?
 
 ```
 py.test --durations=8
@@ -389,17 +374,16 @@ py.test --durations=8
 
 ```
 == slowest 8 test durations ==
-0.69s call     mariano20.py::test_home_today_article[it]
-0.66s call     mariano20.py::test_home_today_article[ca]
-0.66s call     mariano20.py::test_home_today_article[en]
-0.61s call     mariano20.py::test_home_today_article[de]
-0.49s call     mariano20.py::test_site_redirect[en]
-0.47s call     mariano20.py::test_site_redirect[it]
-0.45s call     mariano20.py::test_site_redirect[de]
-0.45s call     mariano20.py::test_site_redirect[ca]
+0.69s mariano20.py::test_home_today_article[it]
+0.66s mariano20.py::test_home_today_article[ca]
+0.66s mariano20.py::test_home_today_article[en]
+0.61s mariano20.py::test_home_today_article[de]
+0.49s mariano20.py::test_site_redirect[en]
+0.47s mariano20.py::test_site_redirect[it]
+0.45s mariano20.py::test_site_redirect[de]
+0.45s mariano20.py::test_site_redirect[ca]
 
-Results (2.10s):
-       8 passed
+Results (2.10s): 8 passed
 ```
 
 
@@ -450,15 +434,14 @@ diccionarios, listas y tuplas.
 
 ```python
 def test_eq_dict(self):
->       assert {'a': 0, 'b': 1, 'c': 0} == {'a': 0, 'b': 2, 'd': 0}
-E         Omitting 1 identical items, use -v to show
-E         Differing items:
-E         {'b': 1} != {'b': 2}
-E         Left contains more items:
-E         {'c': 0}
-E         Right contains more items:
-E         {'d': 0}
-E         Use -v to get the f
+>       assert {'a': 0, 'b': 1, 'c': 0} == \
+               {'a': 0, 'b': 2, 'd': 0}
+E  Differing items:
+E  {'b': 1} != {'b': 2}
+E  Left contains more items:
+E  {'c': 0}
+E  Right contains more items:
+E  {'d': 0}
 ```
 
 
@@ -481,11 +464,11 @@ los ficheros.
 ```python
 # conftest.py
 def pytest_addoption(parser):
-    parser.addoption(
-        "--chekfiles",
-        default="./test-examples",
-        help="set the dir to read the code"
-    )
+  parser.addoption(
+    "--chekfiles",
+    default="./test-examples",
+    help="set the dir to read the code"
+  )
   ```
 
 ```
@@ -493,22 +476,18 @@ py.test --checkfiles=dir
 ```
 
 
-Podemos integrar la recolección de ficheros con un parametrizador:
+Podemos integrar la recolección de ficheros con un parametrizador
+
 
 ```python
 # conftest.py
 def pytest_generate_tests(metafunc):
-    checkfiles = metafunc.config.option.checkfiles
-    matches = []
-    for root, dirnames, filenames in os.walk(checkfiles):
-        for filename in fnmatch.filter(filenames, '*'):
-            extension = os.path.splitext(filename)[1]
-            if extension.lower() in IGNORED_EXTENSIONS:
-                print("File ignore for extension: %s" % filename)
-                continue
-            print(filename)
-            matches.append(os.path.join(root, filename))
-    metafunc.parametrize("check", matches)
+  checkfiles = metafunc.config.option.checkfiles
+  matches = []
+  for root, dirnames, fns in os.walk(checkfiles):
+    for fn in fnmatch.filter(fns, '*'):
+      matches.append(os.path.join(root, fn))
+  metafunc.parametrize("check", matches)
 ```
 
 
@@ -516,13 +495,13 @@ Nuestra función de comprovación de extensión recibirá el parámetro `checkfi
 
 ```python
 def test_filenames_extensions(check):
-    extension = path.splitext(check)[1].strip(".")
-      assert extension in allowed_extensions, \
-             "Extension %s not allowed" % (extension, )
-  ```
+  extension = path.splitext(check)[1].strip(".")
+    assert extension in allowed_extensions, \
+      "Extension %s not allowed" % (extension, )
+```
 
 
-Además, verificar que no contiene saltos de línia Mac también será un plis.
+Verificar que no contiene saltos de línia Mac también será un plis.
 
 ```python
 def test_macos_eol(check):
@@ -542,7 +521,8 @@ Mejor usar magia.
 pip install filemagic
 ```
 ```python
-with magic.Magic(flags=magic.MAGIC_MIME_ENCODING) as m:
+flags = magic.MAGIC_MIME_ENCODING
+with magic.Magic(flags=flags) as m:
     try:
         encoding = m.id_filename(check)
     except magic.MagicError:
@@ -563,36 +543,15 @@ def f(x):
   pass
 ```
 
+
 ```python
 def test_macos_eol(check):
-    # fixture checking
-    if path.basename(check) in MACOS_EOL_FAIL_LIST:
-        pytest.xfail("Expected to fail: \r in file")
-
-    with open(check) as f:
-        assert "\r" not in f.read()
+  # fixture checking
+  if path.basename(check) in MACOS_EOL_FAIL_LIST:
+    pytest.xfail("Expected to fail: \r in file")
+  with open(check) as f:
+    assert "\r" not in f.read()
 ```
-
-
-Para hacer bonitos nuestros tests: ¡ASUUUUCAR!
-
-```
-pip install pytest-sugar
-```
-
-```
-$ py.test -v
-f_utf8[./000_1234_any-extension.xXx] ✓                   4% ▍         
-f_utf8[./010_0000_empty.tab] x                           7% ▊     
-[...]
-f_filenames_extensions[./000_1234_any-extension.xXx] ✓  70% ███████▏  
-f_filenames_extensions[./645_0000_invalid-code.sql] x  100% ██████████
-
-Results (0.15s):
-      17 passed
-      10 xfailed
-```
-Note: https://github.com/Frozenball/pytest-sugar
 
 
 ![thats-all](memes/that-s-all-folks.jpg)
